@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deriv Binary </title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'IBM Plex Sans',sans-serif;background:#0e0e0e;color:#c2c2c2;overflow-x:hidden}
+.deriv-banner{background:#00a651;color:white;text-align:center;padding:6px;font-size:10px;font-weight:700}
+.deriv-header{height:62px;background:#0e0e0e;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;padding:0 10px;position:sticky;top:0;z-index:100}
+.bal-box{background:#1a1a1a;border:2px solid #2a2a2a;border-radius:4px;padding:6px 10px;font-size:11px;font-weight:700;color:white;transition:all .3s}
+.bal-box.flash-up{animation:flashGreen .6s} .bal-box.flash-down{animation:flashRed .6s}
+@keyframes flashGreen{0%{background:#00a651;color:white;transform:scale(1.05)}100%{background:#1a1a1a;transform:scale(1)}}
+@keyframes flashRed{0%{background:#ff444f;color:white;transform:scale(1.05)}100%{background:#1a1a1a;transform:scale(1)}}
+.deriv-left-menu{width:62px;background:#151515;border-right:1px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:8px;position:sticky;top:62px;height:calc(100vh - 62px);z-index:50}
+.left-icon{width:42px;height:42px;background:#0e0e0e;border:1px solid #2a2a2a;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:.2s;color:#666}
+.left-icon.active{background:#2a2a2a;color:white;border-color:#00a651;box-shadow:0 0 8px rgba(0,166,81,.3)} .left-icon span{font-size:7px;margin-top:2px;font-weight:700} .left-icon:hover{background:#1a1a1a;color:white}
+.deriv-layout{display:grid;grid-template-columns:62px 1fr 330px;min-height:calc(100vh - 68px)}
+.deriv-chart-area{background:#0e0e0e;display:flex;flex-direction:column}
+.chart-top{height:38px;background:#151515;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:11px}
+.chart-type-btn{padding:4px 10px;background:#1a1a1a;border:1px solid #2a2a2a;color:#999;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer}.chart-type-btn.active{background:#2a2a2a;color:white;border-color:#00a651}
+#tvChart{width:100%;height:340px;background:#0e0e0e}
+.ticks-bar{height:62px;background:#151515;border-top:1px solid #2a2a2a;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;padding:0 10px;gap:4px;overflow:hidden}
+.tick-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;animation:pop .3s}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.deriv-right{background:#151515;border-left:1px solid #2a2a2a;display:flex;flex-direction:column}
+.right-tabs{display:flex;background:#0e0e0e;border-bottom:1px solid #2a2a2a}
+.r-tab{flex:1;padding:10px;text-align:center;font-size:11px;font-weight:700;color:#666;cursor:pointer;border-bottom:2px solid transparent}.r-tab.active{color:white;border-color:#00a651;background:#151515}
+.trade-panel{padding:12px;overflow:auto}
+.deriv-input{width:100%;height:38px;background:#0e0e0e;border:1px solid #2a2a2a;border-radius:4px;color:white;padding:0 10px;font-size:13px;margin:6px 0;transition:.2s}
+.payout-box{background:#0e0e0e;border:1px solid #2a2a2a;border-radius:4px;padding:10px;margin:10px 0}
+.rise-btn{height:46px;background:#00a651;color:white;border:none;border-radius:4px;font-weight:700;font-size:13px;cursor:pointer;width:100%;margin:4px 0}.fall-btn{height:46px;background:#ff444f;color:white;border:none;border-radius:4px;font-weight:700;font-size:13px;cursor:pointer;width:100%;margin:4px 0}
+.digits-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}.digit-cell{height:36px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer}.digit-cell.active{background:#00a651;color:white}
+.stat-box{background:#0e0e0e;border:1px solid #2a2a2a;border-radius:4px;padding:8px;text-align:center}.stat-num{font-size:16px;font-weight:700;color:white}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.mcard{background:#151515;border:1px solid #2a2a2a;border-radius:8px;padding:20px;width:100%;max-width:420px}
+.btn{height:42px;border:none;border-radius:4px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}.btn-green{background:#00a651;color:white}.btn-red{background:#ff444f;color:white}.btn-dark{background:#1a1a1a;color:white;border:1px solid #2a2a2a}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#00a651;color:white;padding:10px 16px;border-radius:4px;opacity:0;transition:.3s;z-index:10000;font-weight:700;font-size:11px;max-width:90%}.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.receipt{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:#151515;border:2px solid #00a651;border-radius:8px;padding:20px;width:90%;max-width:360px;z-index:10001;transition:.3s}.receipt.show{transform:translate(-50%,-50%) scale(1)}
+.mode-btn{padding:6px 10px;background:#1a1a1a;border:1px solid #00a651;color:#00a651;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer}
+@media(max-width:900px){.deriv-layout{grid-template-columns:1fr}.deriv-left-menu{display:none}}
+</style>
+</head>
+<body>
+<div class="deriv-banner"> DEMO PLAY ALLOWED - $10,000 DEMO - High Volatility 9.5x + Spikes + Odd/Even + SL/TP + Deposit UP + Min $4  REAL MONEY </div>
+<div class="deriv-header">
+<div style="display:flex;gap:10px;align-items:center;color:white;font-weight:700"><div style="width:32px;height:32px;background:#00a651;border-radius:4px;display:flex;align-items:center;justify-content:center">D</div>deriv <span style="font-size:10px;color:#999">| Instant Demo Play</span><span style="padding:3px 8px;background:#00a651;color:white;border-radius:12px;font-size:9px">DEMO PLAY ✓</span><span style="padding:3px 8px;background:#1a1a1a;border:1px solid #00a651;color:#00a651;border-radius:12px;font-size:9px">MIN $4 VALIDATION</span><span style="font-size:9px;padding:2px 6px;background:#00a651;color:white;border-radius:4px" id="marketStatus">MARKET OPEN HIGH VOL REAL</span></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<div id="backendStatus" style="padding:5px 10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;font-size:9px">DB: demo play mode</div>
+<div style="display:flex;gap:6px;align-items:center;background:#0e0e0e;border:1px solid #2a2a2a;border-radius:20px;padding:4px 6px" id="topDepWrap">
+<select id="topDepMode" style="background:#1a1a1a;border:1px solid #2a2a2a;color:white;border-radius:12px;padding:4px 6px;font-size:10px;font-weight:700"><option value="demo" selected>DEMO </option><option value="real">REAL  Min $4</option></select>
+<input id="topDepAmt" type="number" placeholder="Min $4" style="width:80px;height:28px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:white;padding:0 8px;font-size:11px">
+<button id="topDepBtn" style="height:28px;background:#00a651;color:white;border:none;border-radius:12px;padding:0 14px;font-weight:700;font-size:10px;cursor:pointer">DEPOSIT UP REAL</button>
+</div>
+<button id="modeToggle" class="mode-btn">MODE: DEMO PLAY </button>
+<div class="bal-box" id="bal" style="border-color:#00a651">$10,000.00 DEMO REAL PLAY</div>
+<div class="bal-box" id="balReal" style="background:#0e0e0e;color:#999">$0.00 REAL </div>
+<div id="uEmail" style="font-size:11px;color:#00a651;font-weight:700"></div>
+</div>
+</div>
+
+<div id="authM" class="modal" style="display:none"><div class="mcard">
+<h3 style="color:white">Instant Demo Play - Optional Login</h3><p style="font-size:11px;color:#999;margin:8px 0">You are already playing demo $10k  high vol - login optional for referral - All REAL</p>
+<div style="display:flex;gap:8px;margin:10px 0"><button id="tabIn" class="btn btn-green" style="flex:1;margin:0">Sign In</button><button id="tabUp" class="btn btn-dark" style="flex:1;margin:0">Create Account</button></div>
+<div id="inBox"><input id="siEmail" class="deriv-input" placeholder="Email" value="joseph@gmail.com"><input id="siPass" type="password" class="deriv-input" placeholder="Password" value="1234"><button id="siBtn" class="btn btn-green" style="height:50px">ENTER REAL</button><button id="guestBtn" class="btn btn-dark">SIGN IN</button></div>
+<div id="upBox" style="display:none"><input id="suName" class="deriv-input" placeholder="Full Name" value="John Doe"><input id="suEmail" class="deriv-input" placeholder="Email" value="john@deriv.demo"><input id="suRefInput" class="deriv-input" placeholder="Referral Code"><input id="suPass" type="password" class="deriv-input" placeholder="Password min 4" value="1234"><div style="background:#0e0e0e;padding:8px;border-radius:4px;font-size:11px;border:1px solid #2a2a2a">Code: <b id="previewCode" style="color:#00a651">DERIV-JOHN-A7K9</b></div><button id="suBtn" class="btn btn-green" style="height:50px">CREATE REAL</button></div>
+<button id="closeAuth" class="btn btn-dark" style="height:32px;font-size:10px">Close - sign in</button>
+</div></div>
+
+<div id="receiptM" class="receipt">
+<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:white">Contract Receipt - REAL DEMO PLAY</b><span style="font-size:10px;padding:2px 6px;background:#00a651;color:white;border-radius:4px">RAEL DEMO PLAY ✓</span></div>
+<div style="margin-top:10px;background:#0e0e0e;padding:10px;border-radius:4px;border:1px solid #2a2a2a;font-size:11px">
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Type:</span><b id="rcType" style="color:white">RISE</b></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Mode:</span><b id="rcMode" style="color:#00a651">DEMO PLAY </b></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Stake:</span><b id="rcStake" style="color:white">$10</b></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Entry:</span><span id="rcEntry" style="color:white">$65000</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Payout:</span><b id="rcPayout" style="color:#00a651">$19.50</b></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">Duration:</span><span style="color:white">10 ticks HIGH VOL REAL</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#999">ID:</span><span style="font-size:9px;color:#999" id="rcId">ID-REAL-PLAY-123456</span></div>
+<div style="margin-top:8px;font-size:9px;color:#999;text-align:center">DEMO PLAY ALLOWED - This is REAL DEMO -  real money - High volatility - Min $4 structure</div>
+</div>
+<button id="rcClose" class="btn btn-green" style="height:36px;margin-top:10px">Close - sign in</button>
+</div>
+
+<div class="deriv-layout">
+<div class="deriv-left-menu">
+<div class="left-icon active" data-left="chart" title="Chart - Demo Play">📈<span>CHART</span></div>
+<div class="left-icon" data-left="refer" title="Referral">👥<span>REFER</span></div>
+<div class="left-icon" data-left="deposit" title="Deposit Min $4 Real">💰<span>DEPOSIT</span></div>
+<div class="left-icon" data-left="withdraw" title="Withdraw Min $4 Real">💸<span>WITHDR</span></div>
+<div class="left-icon" data-left="history" title="History">📜<span>HISTORY</span></div>
+<div class="left-icon" data-left="account" title="Account - Open Login">👤<span>ACCOUNT</span></div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:6px;align-items:center"><div style="font-size:7px;color:#00a651;text-align:center">DEMO<br>PLAY<br>ALLOWED<br>$10k REAL</div><div class="left-icon" style="width:32px;height:32px;font-size:10px;background:#00a651;color:white">▶</div></div>
+</div>
+
+<div class="deriv-chart-area">
+<div class="chart-top"><span style="font-weight:700;color:white">Volatility 95 (1s) HIGH VOL DEMO PLAY</span><span id="btcP" style="font-weight:700;color:white">$--</span><span id="btcChg" style="padding:2px 8px;border-radius:4px;background:#00a651;color:white;font-size:10px">--</span><span style="font-size:9px;color:#999">Spread: <span id="spreadTxt">0.8</span> | Demo Play | Min $4 | High Vol</span><button class="chart-type-btn active" data-type="candle">Candles</button><button class="chart-type-btn" data-type="line">Line</button><span style="margin-left:auto;font-size:9px;color:#00a651"><span id="tickCount">0</span> ticks/s DEMO PLAY ✓</span></div>
+<div id="tvChart"></div>
+<div class="ticks-bar" id="ticksBar"></div>
+
+<div style="background:#151515;border-top:1px solid #2a2a2a;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div style="background:#0e0e0e;border:1px solid #2a2a2a;border-radius:6px;padding:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:11px;color:white">Digits - Odd / Even - DEMO PLAY</b><span style="font-size:9px;padding:2px 6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px">Last: <b id="underLastD" style="color:#00a651">--</b></span></div>
+<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-bottom:8px" id="underDigitsGrid"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button id="underOddBtn" style="height:40px;background:#1a1a1a;border:1px solid #2a2a2a;color:#c2c2c2;border-radius:4px;font-weight:700;cursor:pointer"><div style="font-size:12px">ODD</div><div style="font-size:9px;color:#999">1,3,5,7,9 DEMO PLAY</div></button><button id="underEvenBtn" style="height:40px;background:#1a1a1a;border:1px solid #2a2a2a;color:#c2c2c2;border-radius:4px;font-weight:700;cursor:pointer"><div style="font-size:12px">EVEN</div><div style="font-size:9px;color:#999">0,2,4,6,8 DEMO PLAY</div></button></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"><button class="chart-type-btn" style="height:32px" id="underOverBtn">Over 4 DEMO PLAY</button><button class="chart-type-btn" style="height:32px" id="underUnderBtn">Under 4 DEMO PLAY</button></div>
+<div style="font-size:9px;color:#00a651;margin-top:6px;text-align:center">Odd/Even payout 1.95x - DEMO PLAY ALLOWED - $10k REAL -  REAL MONEY ALLOWED</div>
+</div>
+
+<div style="background:#0e0e0e;border:1px solid #2a2a2a;border-radius:6px;padding:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:11px;color:white">Risk - SL / TP - DEMO PLAY</b><span style="font-size:9px;padding:2px 6px;background:#00a651;color:white;border-radius:10px">AUTO CLOSE DEMO PLAY ✓</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><div style="font-size:10px;color:#999">Stop Loss - Min $4</div><div style="display:flex;gap:4px;margin-top:4px"><input id="slValue" class="deriv-input" type="number" placeholder="$5" value="5" style="height:32px;margin:0"><button id="slToggle" class="chart-type-btn active" style="height:32px;min-width:50px">ON</button></div><div style="font-size:8px;color:#999;margin-top:2px">Auto close if loss >= SL - DEMO PLAY</div></div><div><div style="font-size:10px;color:#999">Take Profit - Min $4</div><div style="display:flex;gap:4px;margin-top:4px"><input id="tpValue" class="deriv-input" type="number" placeholder="$10" value="10" style="height:32px;margin:0"><button id="tpToggle" class="chart-type-btn active" style="height:32px;min-width:50px">ON</button></div><div style="font-size:8px;color:#999;margin-top:2px">Auto close if profit >= TP - DEMO PLAY</div></div></div>
+<div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:6px;margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10px"><span style="color:#999">Current P/L DEMO PLAY:</span><b id="underPL" style="color:white">$0.00 PLAY</b></div><div style="display:flex;justify-content:space-between;font-size:9px;margin-top:2px"><span style="color:#999">SL:</span><span id="underSLStatus" style="color:#ff444f">$5.00 ON PLAY</span><span style="color:#999">TP:</span><span id="underTPStatus" style="color:#00a651">$10.00 ON PLAY</span></div><div style="width:100%;height:4px;background:#2a2a2a;border-radius:2px;margin-top:6px;overflow:hidden"><div id="underPLBar" style="height:100%;width:50%;background:#666;transition:.3s"></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button id="setSLTPBtn" class="btn btn-dark" style="height:32px;font-size:10px;margin:0">Set SL/TP PLAY Min $4</button><button id="closeAllBtn" class="btn btn-green" style="height:32px;font-size:10px;margin:0">Close All PLAY</button></div>
+<div style="font-size:8px;color:#666;margin-top:4px;text-align:center">SL/TP DEMO PLAY ALLOWED -  REAL MONEY ALLOWED - Min $4 </div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;background:#151515;border-top:1px solid #2a2a2a;border-bottom:1px solid #2a2a2a"><div class="stat-box" style="border-radius:0"><div style="font-size:10px;color:#999">Last Digit</div><div class="stat-num" id="lastD">--</div><div style="font-size:10px" id="lastDType">--</div></div><div class="stat-box" style="border-radius:0;border-left:1px solid #2a2a2a"><div style="font-size:10px;color:#999">AI Signal</div><div class="stat-num" id="aiSignal" style="font-size:14px">ANALYZING PLAY</div><div style="font-size:10px" id="aiConf">--%</div></div><div class="stat-box" style="border-radius:0;border-left:1px solid #2a2a2a"><div style="font-size:10px;color:#999">Demo Play</div><div style="font-size:11px;color:#00a651" id="latencyTxt">DEMO PLAY ✓</div><div style="font-size:9px">High Vol SL/TP</div></div><div class="stat-box" style="border-radius:0;border-left:1px solid #2a2a2a"><div style="font-size:10px;color:#999">Instant Play</div><div style="font-size:10px;color:#00a651">Demo $10k PLAY<br>Real $0<br>Min $4 High Vol</div></div></div>
+
+<div style="background:#0e0e0e;padding:8px;border-top:1px solid #2a2a2a"><div style="font-size:10px;color:#00a651">Panes - Instant Demo Play - Click to switch</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><button class="chart-type-btn active" data-pane="chart">Chart High Vol PLAY</button><button class="chart-type-btn" data-pane="refer">Referral</button><button class="chart-type-btn" data-pane="deposit">Deposit Min $4 Real</button><button class="chart-type-btn" data-pane="withdraw">Withdraw Min $4 Real</button><button class="chart-type-btn" data-pane="history">History PLAY</button><button class="chart-type-btn" data-pane="account">Account / Login</button></div></div>
+<div id="pane-chart" style="padding:10px;display:block"><div style="font-size:11px;color:#00a651">✅ INSTANT DEMO PLAY: You are already playing! $10k demo REAL - Click Rise/Fall or Odd/Even under graph - Left menu works - High volatility 9.5x + spikes - Deposit UP - Min $4 validation - All REAL </div></div>
+<div id="pane-refer" style="padding:12px;display:none;background:#151515;border-top:1px solid #2a2a2a"><b>Referral - Demo Play</b><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px"><div><div id="myRefCode" style="font-family:monospace;font-size:16px;font-weight:800;color:#00a651;background:#0e0e0e;border:1px dashed #00a651;padding:10px;border-radius:4px;text-align:center">DERIV-DEMO-PLAY</div><div style="display:flex;gap:6px;margin-top:6px"><button onclick="copyCode()" class="btn btn-dark" style="flex:1;height:32px;font-size:11px">Copy Code</button><button onclick="copyLink()" class="btn btn-dark" style="flex:1;height:32px;font-size:11px">Copy Link</button></div></div><div><div id="myRefLink" style="font-size:10px;background:#0e0e0e;border:1px solid #2a2a2a;padding:10px;border-radius:4px;word-break:break-all;color:#999">?ref=</div><div style="font-size:10px">Refs: <b id="refCount">0</b> | Earn: <b id="refEarn">$0</b> PLAY</div></div></div><div id="refHistory" style="font-size:11px;background:#0e0e0e;padding:8px;border-radius:4px;margin-top:8px;max-height:100px;overflow:auto">Demo play - referral real</div></div>
+<div id="pane-deposit" style="padding:12px;display:none"><b>Deposit - Demo Play - Min $4 -  REAL MONEY ALLOWED</b><div style="display:flex;gap:6px;margin:8px 0"><button id="depModeDemo" class="chart-type-btn active" data-dep="demo">DEMO PLAY</button><button id="depModeReal" class="chart-type-btn" data-dep="real">REAL </button></div><input id="depAmt" class="deriv-input" type="number" placeholder="Min $4 PLAY"><button id="depBtn" class="btn btn-green">Deposit PLAY Min $4 - High Vol</button><div style="font-size:10px;color:#00a651;margin-top:6px">✓ Demo play allowed - high vol + flash + receipt - Both real - Min $4 validation at menu</div></div>
+<div id="pane-withdraw" style="padding:12px;display:none"><b>Withdraw - Demo Play - Min $4 -  REAL MONEY ALLOWED</b><div style="display:flex;gap:6px;margin:8px 0"><button id="withModeDemo" class="chart-type-btn" data-with="demo">DEMO PLAY</button><button id="withModeReal" class="chart-type-btn active" data-with="real">REAL</button></div><input id="withAmt" class="deriv-input" type="number" placeholder="Min $4 PLAY"><button id="withBtn" class="btn btn-dark">Withdraw PLAY Min $4 - High Vol</button></div>
+<div id="pane-history" style="padding:12px;display:none"><b>History - Demo Play</b><div style="display:flex;gap:6px;margin:8px 0"><button id="showTx" class="chart-type-btn active" style="font-size:10px">Transactions PLAY</button><button id="showSec" class="chart-type-btn" style="font-size:10px">Security Logs</button></div><div id="histList">Demo play history real</div><div id="secLogs" style="display:none"></div></div>
+<div id="pane-account" style="padding:12px;display:none"><b>Account - Demo Play - Login Optional</b><div style="background:#0e0e0e;padding:10px;border-radius:4px;margin:8px 0;border:1px solid #2a2a2a"><div id="accRefCode" style="font-family:monospace;font-weight:800;color:#00a651">DERIV-DEMO-PLAY</div><div id="accRefLink" style="font-size:10px;color:#999">Demo play allowed</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div style="background:#1a1a1a;padding:6px;border-radius:4px;text-align:center;border:1px solid #00a651"><div style="font-size:9px">DEMO PLAY $10k</div><div id="accDemoBal" style="font-weight:700;color:white">$10,000 PLAY</div></div><div style="background:#0e0e0e;padding:6px;border-radius:4px;text-align:center;border:1px solid #ff444f"><div style="font-size:9px">REAL Min $4</div><div id="accRealBal" style="font-weight:700;color:#ff444f">$0</div></div></div></div><button id="openLoginBtn" class="btn btn-green">Open Login / Create Account</button><button id="saveAcc" class="btn btn-dark">Save</button><button id="logoutBtn" class="btn btn-dark">Logout - sign in</button></div>
+</div>
+
+<div class="deriv-right">
+<div class="right-tabs"><div class="r-tab active" data-trade="risefall">Rise/Fall PLAY</div><div class="r-tab" data-trade="digits">Digits PLAY</div><div class="r-tab" data-trade="auto">AI Bot PLAY</div></div>
+<div id="trade-risefall" class="trade-panel"><div style="display:flex;gap:6px;margin-bottom:8px"><button id="tradeModeDemo" class="chart-type-btn active" data-tmode="demo" style="flex:1">DEMO PLAY</button><button id="tradeModeReal" class="chart-type-btn" data-tmode="real" style="flex:1">REAL Min $4</button></div><input id="stake" class="deriv-input" type="number" value="10"><div class="payout-box"><div style="display:flex;justify-content:space-between;font-size:11px"><span>Payout PLAY</span><span id="payout" style="color:white;font-weight:700">$19.50</span></div><div style="font-size:10px">Mode: <b id="tradeModeTxt" style="color:#00a651">DEMO PLAY</b> | Latency: <span id="execLatency" style="color:#00a651">DEMO PLAY ✓</span></div><div style="font-size:9px;color:#999;margin-top:4px">Demo play allowed - high vol 9.5x + spikes + 1.2s delay + receipt + flash - REAL -</div></div><button class="rise-btn" id="riseBtn">▲ Rise - DEMO PLAY ✓</button><button class="fall-btn" id="fallBtn">▼ Fall - DEMO PLAY ✓</button><div style="margin-top:10px;background:#0e0e0e;border:1px solid #2a2a2a;border-radius:4px;padding:8px"><div style="font-size:10px;color:#00a651">AI + High Vol + SL/TP - DEMO PLAY</div><div style="font-size:11px" id="aiReason">Analyzing high vol demo play...</div><button id="aiTradeBtn" class="btn btn-green" style="height:36px;font-size:11px">Follow AI DEMO PLAY</button></div></div>
+<div id="trade-digits" class="trade-panel" style="display:none"><div class="digits-grid" id="digitsGrid"></div><div style="display:flex;gap:6px"><button class="rise-btn" id="oddBtn" style="flex:1">Odd PLAY</button><button class="fall-btn" id="evenBtn" style="flex:1">Even PLAY</button></div><div id="digitStats" style="font-size:11px;background:#0e0e0e;padding:8px;border-radius:4px;margin-top:6px">Demo play allowed</div></div>
+<div id="trade-auto" class="trade-panel" style="display:none"><input id="autoStake" class="deriv-input" type="number" value="10"><div style="display:flex;gap:6px"><button id="autoStart" class="btn btn-green" style="flex:1;margin:0">Start PLAY</button><button id="autoStop" class="btn btn-dark" style="flex:1;margin:0">Stop PLAY</button></div><div id="autoLog" style="background:#0e0e0e;border:1px solid #2a2a2a;padding:8px;border-radius:4px;font-size:11px;height:100px;overflow:auto;margin-top:8px">Idle - Demo play allowed - High Vol 1s ticks</div><div style="margin-top:8px">Code: <span id="quickCode" style="color:#00a651;font-family:monospace;font-weight:800">DEMO-PLAY</span> Ref <b id="quickCount">0</b> Earn <b id="quickEarn">$0</b></div></div>
+<div style="background:#0e0e0e;border-top:1px solid #2a2a2a;padding:10px"><div style="font-size:11px;color:#00a651">Open Positions - DEMO PLAY ✓</div><div id="openPos" style="margin-top:6px;font-size:11px;color:#666">No positions - Click Rise/Fall to play demo instantly - High vol</div></div>
+</div>
+</div>
+
+<div id="toast" class="toast"><span id="tText"></span></div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const BACKEND_URL='http://localhost:3000';
+let USE_BACKEND=false;
+let btc=65000,lastRealBtc=65000,candleData=[],ticks=[],chart,candleSeries,lineSeries,areaSeries,autoInt=null,tickCounter=0;
+let user=JSON.parse(localStorage.getItem('xm_deriv_user')||'null'),bal=10000,realBal=35400,currentMode='demo',depMode='demo',withMode='real',tradeMode='demo';
+let slEnabled=true,tpEnabled=true,currentPL=0;
+function sanitize(s){return String(s||'').replace(/[^A-Z0-9\-]/gi,'').substring(0,20).toUpperCase();}
+function sanitizeEmail(s){return String(s||'').replace(/[^a-zA-Z0-9@._\-]/gi,'').substring(0,100).toLowerCase();}
+function genSecureCode(name){const c=(name||'USER').replace(/[^A-Z0-9]/gi,'').substring(0,4).toUpperCase()||'USER';const rand=Math.random().toString(36).substring(2,6).toUpperCase();return `DERIV-${c}-${rand}`;}
+function fmt(v){return '$'+(v<1?v.toFixed(4):v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}))}
+function toast(m){$('tText').textContent=m;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),4000)}
+window.copyCode=()=>{navigator.clipboard.writeText($('myRefCode').textContent);toast('Copied: '+$('myRefCode').textContent);};
+window.copyLink=()=>{navigator.clipboard.writeText($('myRefLink').textContent);toast('Copied Link');};
+function flashBalance(up){const el=currentMode==='demo'?$('bal'):$('balReal');el.classList.remove('flash-up','flash-down');void el.offsetWidth;el.classList.add(up?'flash-up':'flash-down');setTimeout(()=>el.classList.remove('flash-up','flash-down'),700);}
+function showReceipt(type,stake,mode){$('rcType').textContent=type; $('rcMode').textContent=mode.toUpperCase()+' PLAY FAKE'; $('rcStake').textContent=fmt(stake);$('rcEntry').textContent=fmt(btc); $('rcPayout').textContent=fmt(stake*1.95); $('rcId').textContent='ID-PLAY-'+Math.floor(Math.random()*900000+100000);$('receiptM').classList.add('show');}
+function save(){$('bal').textContent=fmt(bal)+' DEMO PLAY'; $('balReal').textContent=fmt(realBal)+' REAL FAKE';if(user)$('uEmail').textContent=user.email;const accD=$('accDemoBal'),accR=$('accRealBal'); if(accD)accD.textContent=fmt(bal)+' PLAY'; if(accR)accR.textContent=fmt(realBal);}
+function updateModeUI(){$('modeToggle').textContent=`MODE: ${currentMode.toUpperCase()} PLAY (REAL)`;$('modeToggle').style.background=currentMode==='real'?'#ff444f':'#00a651';$('bal').style.borderColor=currentMode==='demo'?'#00a651':'#2a2a2a';$('balReal').style.borderColor=currentMode==='real'?'#ff444f':'#2a2a2a';$('tradeModeTxt').textContent=currentMode.toUpperCase()+' PLAY REAL';tradeMode=currentMode;document.querySelectorAll('[data-tmode]').forEach(b=>{b.classList.toggle('active',b.dataset.tmode===currentMode)});if($('topDepMode'))$('topDepMode').value=currentMode;}
+window.enterWeb=async(email,name,refInput)=>{email=sanitizeEmail(email); name=name.replace(/[^a-zA-Z0-9 ]/gi,'').substring(0,50); let code=genSecureCode(name||email); const u={email:email||'demo.player@deriv.demo',name:name||'Demo Player',refCode:code}; localStorage.setItem('xm_deriv_user',JSON.stringify(u)); user=u; if(bal<100) bal=10000; save(); updateModeUI(); $('authM').style.display='none'; toast(`✅ DEMO PLAY ALLOWED - ${name} - $10,000 DEMO REAL - High Vol - REAL MONEY ALLOWED`);};
+function initChart(){const cont=$('tvChart');chart=LightweightCharts.createChart(cont,{layout:{background:{color:'#0e0e0e'},textColor:'#666'},grid:{vertLines:{color:'#151515'},horzLines:{color:'#151515'}},rightPriceScale:{borderColor:'#2a2a2a'},timeScale:{borderColor:'#2a2a2a',timeVisible:true},handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true}});candleSeries=chart.addCandlestickSeries({upColor:'#00a651',downColor:'#ff444f',borderVisible:false,wickUpColor:'#00a651',wickDownColor:'#ff444f'});lineSeries=chart.addLineSeries({color:'#00a651',lineWidth:2,visible:false});let now=Math.floor(Date.now()/1000)-140*60;let price=65000;for(let i=0;i<140;i++){const o=price;price+=(Math.random()-0.5)*200;const h=Math.max(o,price)+Math.random()*80;const l=Math.min(o,price)-Math.random()*80;const c=price;candleData.push({time:now+i*60,open:o,high:h,low:l,close:c});ticks.push({time:now+i*60,value:c,digit:Math.floor(c)%10});}candleSeries.setData(candleData);lineSeries.setData(candleData.map(c=>({time:c.time,value:c.close})));chart.timeScale().fitContent();new ResizeObserver(()=>chart.applyOptions({width:cont.clientWidth,height:cont.clientHeight})).observe(cont);renderTicks();}
+function renderTicks(){const bar=$('ticksBar');const last30=ticks.slice(-30);bar.innerHTML='<span style="font-size:10px;color:#00a651;margin-right:8px">Ticks 1s DEMO PLAY ✓:</span>'+last30.map((t,i)=>`<div class="tick-dot" style="background:${t.digit%2===0?'#00a651':'#ff444f'};${i===last30.length-1?'box-shadow:0 0 8px currentColor':''}">${t.digit}</div>`).join('');const ld=last30.length?last30[last30.length-1].digit:0;$('lastD').textContent=ld;$('lastDType').textContent=ld%2===0?'EVEN':'ODD';if($('underLastD'))$('underLastD').textContent=ld;}
+function check(){save();updateModeUI();renderDigits();renderUnderDigits();const g=$('guestBtn'); if(g) g.onclick=()=>{$('authM').style.display='none';};const cA=$('closeAuth'); if(cA) cA.onclick=()=>{$('authM').style.display='none';};const oL=$('openLoginBtn'); if(oL) oL.onclick=()=>{$('authM').style.display='flex';};}
+function renderDigits(){const g=$('digitsGrid');g.innerHTML='';for(let i=0;i<=9;i++){const d=document.createElement('div');d.className='digit-cell';d.textContent=i;d.onclick=()=>{document.querySelectorAll('.digit-cell').forEach(x=>x.classList.remove('active'));d.classList.add('active');};g.appendChild(d);}}
+function renderUnderDigits(){const g=$('underDigitsGrid');if(!g) return;g.innerHTML='';for(let i=0;i<=9;i++){const d=document.createElement('div');d.style.cssText='height:28px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;color:#999';d.textContent=i;d.onclick=()=>{document.querySelectorAll('#underDigitsGrid div').forEach(x=>{x.style.background='#1a1a1a';x.style.color='#999';x.style.borderColor='#2a2a2a'});d.style.background='#00a651';d.style.color='white';d.style.borderColor='#00a651';toast(`Digit ${i} selected - DEMO PLAY`);};g.appendChild(d);}}
+$('tabIn').onclick=()=>{$('inBox').style.display='block';$('upBox').style.display='none';};$('tabUp').onclick=()=>{$('inBox').style.display='none';$('upBox').style.display='block';};
+$('siBtn').onclick=()=>enterWeb($('siEmail').value.trim()||'student@deriv.demo','Student','');$('suBtn').onclick=()=>enterWeb($('suEmail').value.trim()||'new@deriv.demo',$('suName').value.trim()||'New',$('suRefInput').value.trim());
+$('suName').oninput=()=>{const c=genSecureCode($('suName').value||'JOHN');$('previewCode').textContent=c;};
+$('rcClose').onclick=()=>{$('receiptM').classList.remove('show');};
+document.querySelectorAll('.chart-type-btn[data-pane]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.chart-type-btn[data-pane]').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('[id^="pane-"]').forEach(p=>p.style.display='none');const id='pane-'+b.dataset.pane;if($(id))$(id).style.display='block';document.querySelectorAll('.left-icon[data-left]').forEach(i=>{i.classList.toggle('active',i.dataset.left===b.dataset.pane)});});
+document.querySelectorAll('.chart-type-btn[data-type]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.chart-type-btn[data-type]').forEach(x=>x.classList.remove('active'));b.classList.add('active');candleSeries.applyOptions({visible:b.dataset.type==='candle'});lineSeries.applyOptions({visible:b.dataset.type==='line'});});
+document.querySelectorAll('.r-tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.r-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.querySelectorAll('[id^="trade-"]').forEach(p=>p.style.display='none');$('trade-'+t.dataset.trade).style.display='block';});
+document.querySelectorAll('.left-icon[data-left]').forEach(icon=>{icon.onclick=()=>{document.querySelectorAll('.left-icon[data-left]').forEach(i=>i.classList.remove('active'));icon.classList.add('active');const pane=icon.dataset.left;document.querySelectorAll('.chart-type-btn[data-pane]').forEach(b=>{b.classList.toggle('active',b.dataset.pane===pane);});document.querySelectorAll('[id^="pane-"]').forEach(p=>p.style.display='none');const id='pane-'+pane;if($(id))$(id).style.display='block';if(pane==='account'){$('authM').style.display='flex';}};});
+$('modeToggle').onclick=()=>{currentMode=currentMode==='demo'?'real':'demo'; updateModeUI(); toast(`Switched ${currentMode.toUpperCase()} PLAY FAKE - Demo play allowed`);};
+document.querySelectorAll('[data-dep]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-dep]').forEach(x=>x.classList.remove('active'));b.classList.add('active');depMode=b.dataset.dep;});
+document.querySelectorAll('[data-with]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-with]').forEach(x=>x.classList.remove('active'));b.classList.add('active');withMode=b.dataset.with;});
+document.querySelectorAll('[data-tmode]').forEach(b=>b.onclick=()=>{tradeMode=b.dataset.tmode; currentMode=b.dataset.tmode; updateModeUI(); toast(`Trading ${tradeMode.toUpperCase()} PLAY - Min $4`);});
+function placeTradeRealistic(type){const stake=parseFloat($('stake').value||10);if(isNaN(stake)||stake<1||stake>1000){toast('Stake 1-1000');return;}if(tradeMode==='real' && stake < 4){toast('MENU VALIDATION: Min $4 in REAL PLAY mode - You entered $'+stake);return;}$('riseBtn').disabled=true; $('fallBtn').disabled=true; $('execLatency').textContent=Math.floor(30+Math.random()*80)+'ms PLAY';toast(`⏳ Processing ${type} ${fmt(stake)} ${tradeMode.toUpperCase()} PLAY - 1.2s high vol...`);setTimeout(()=>{$('riseBtn').disabled=false; $('fallBtn').disabled=false;flashBalance(Math.random()>0.5); showReceipt(type,stake,tradeMode); currentPL+=(Math.random()>0.5?1:-1)*stake*0.8; updateUnderPL(); toast(`${type} EXECUTED ${tradeMode.toUpperCase()} PLAY ${fmt(bal)} - DEMO PLAY ALLOWED - REAL MONEY ALLOWED`);},1200);}
+$('riseBtn').onclick=()=>placeTradeRealistic('RISE');$('fallBtn').onclick=()=>placeTradeRealistic('FALL');$('oddBtn').onclick=()=>placeTradeRealistic('ODD');$('evenBtn').onclick=()=>placeTradeRealistic('EVEN');$('aiTradeBtn').onclick=()=>{if(window._sig&&window._sig!=='HOLD')placeTradeRealistic(window._sig);else toast('HOLD - Demo play');};
+$('underOddBtn').onclick=()=>{ $('underOddBtn').style.background='#00a651';$('underOddBtn').style.color='white';setTimeout(()=>{ $('underOddBtn').style.background='#1a1a1a';$('underOddBtn').style.color='#c2c2c2'; },300); placeTradeRealistic('ODD'); };
+$('underEvenBtn').onclick=()=>{ $('underEvenBtn').style.background='#00a651';$('underEvenBtn').style.color='white';setTimeout(()=>{ $('underEvenBtn').style.background='#1a1a1a';$('underEvenBtn').style.color='#c2c2c2'; },300); placeTradeRealistic('EVEN'); };
+$('underOverBtn').onclick=()=>placeTradeRealistic('OVER');$('underUnderBtn').onclick=()=>placeTradeRealistic('UNDER');
+$('slToggle').onclick=()=>{slEnabled=!slEnabled;$('slToggle').classList.toggle('active',slEnabled);$('slToggle').textContent=slEnabled?'ON':'OFF';$('underSLStatus').textContent=`$${$('slValue').value||5} ${slEnabled?'ON':'OFF'} PLAY`;toast(`Stop Loss ${slEnabled?'ON':'OFF'} PLAY`);};
+$('tpToggle').onclick=()=>{tpEnabled=!tpEnabled;$('tpToggle').classList.toggle('active',tpEnabled);$('tpToggle').textContent=tpEnabled?'ON':'OFF';$('underTPStatus').textContent=`$${$('tpValue').value||10} ${tpEnabled?'ON':'OFF'} PLAY`;toast(`Take Profit ${tpEnabled?'ON':'OFF'} PLAY`);};
+$('slValue').oninput=()=>{ $('underSLStatus').textContent=`$${$('slValue').value||5} ${slEnabled?'ON':'OFF'} PLAY`;};
+$('tpValue').oninput=()=>{ $('underTPStatus').textContent=`$${$('tpValue').value||10} ${tpEnabled?'ON':'OFF'} PLAY`;};
+$('setSLTPBtn').onclick=()=>{const sl=parseFloat($('slValue').value||5);const tp=parseFloat($('tpValue').value||10);if(sl<4){toast(' Min $4 SL PLAY');return;}if(tp<4){toast(' Min $4 TP PLAY');return;}toast(`SL $${sl} TP $${tp} Set - PLAY - NO REAL MONEY`);currentPL=(Math.random()-0.5)*(sl+tp);updateUnderPL();};
+$('closeAllBtn').onclick=()=>{currentPL=0;updateUnderPL();toast('All closed PLAY - P/L $0');};
+function updateUnderPL(){const plEl=$('underPL');const bar=$('underPLBar');if(!plEl||!bar) return;plEl.textContent=(currentPL>=0?'+':'')+fmt(currentPL)+' PLAY';plEl.style.color=currentPL>=0?'#00a651':'#ff444f';const pct=50+(currentPL/20)*50;bar.style.width=Math.max(5,Math.min(95,pct))+'%';bar.style.background=currentPL>=0?'#00a651':'#ff444f';const sl=parseFloat($('slValue').value||5);const tp=parseFloat($('tpValue').value||10);if(slEnabled && currentPL <= -sl){toast(`🛑 STOP LOSS HIT -$${sl} PLAY - Auto closed`);currentPL=0;updateUnderPL();}if(tpEnabled && currentPL >= tp){toast(`✅ TAKE PROFIT HIT +$${tp} PLAY - Auto closed`);currentPL=0;updateUnderPL();}}
+if($('topDepAmt'))$('topDepAmt').oninput=()=>{const v=parseFloat($('topDepAmt').value);const wrap=$('topDepWrap');if(!v||v<4){wrap.style.borderColor='#ff444f';$('topDepBtn').style.background='#666';$('topDepBtn').textContent=v?`MIN $4 - Need $${(4-v).toFixed(2)} PLAY`:'ENTER MIN $4 PLAY';}else{wrap.style.borderColor='#00a651';$('topDepBtn').style.background='#00a651';$('topDepBtn').textContent='DEPOSIT UP PLAY ✓';}};
+if($('topDepBtn'))$('topDepBtn').onclick=()=>{const v=parseFloat($('topDepAmt').value);const mode=$('topDepMode').value;if(isNaN(v)){toast(' MENU VALIDATION AT TOP: Enter Min $4 PLAY');return;}if(v<4){toast(`TOP: Min $4 - Need $${(4-v).toFixed(2)} PLAY`);return;}$('topDepBtn').disabled=true;$('topDepBtn').textContent='⏳ PROCESSING PLAY...';setTimeout(()=>{$('topDepBtn').disabled=false;$('topDepBtn').textContent='DEPOSIT UP PLAY ✓';bal+=mode==='demo'?v:0; realBal+=mode==='real'?v:0; save(); flashBalance(true); showReceipt('DEPOSIT',v,mode); toast(`✅ TOP DEPOSIT ${mode.toUpperCase()} PLAY +$${v} Min $4 PASSED -  REAL MONEY ALLOWED`);$('topDepAmt').value='';},800);};
+$('depBtn').onclick=()=>{const v=parseFloat($('depAmt').value); if(isNaN(v)||v<4){toast(' Min $4 validation PLAY');$('depAmt').style.borderColor='#ff444f';return;}$('depBtn').disabled=true; setTimeout(()=>{$('depBtn').disabled=false; bal+=depMode==='demo'?v:0; realBal+=depMode==='real'?v:0; save(); flashBalance(true); showReceipt('DEPOSIT',v,depMode); toast(`DEPOSIT ${depMode.toUpperCase()} PLAY +$${v} -  REAL MONEY ALLOWED`);},800);};
+$('withBtn').onclick=()=>{const v=parseFloat($('withAmt').value); if(isNaN(v)||v<4){toast(' Min $4 withdraw PLAY');return;}$('withBtn').disabled=true; setTimeout(()=>{$('withBtn').disabled=false; if(withMode==='demo'&&bal>=v) bal-=v; if(withMode==='real'&&realBal>=v) realBal-=v; save(); flashBalance(false); showReceipt('WITHDRAW',v,withMode); toast(`WITHDRAW ${withMode.toUpperCase()} PLAY -$${v} - NO REAL MONEY`);},800);};
+function runAI(){if(candleData.length<10)return;const closes=candleData.slice(-20).map(c=>c.close);const ma5=closes.slice(-5).reduce((a,b)=>a+b,0)/5;const ma10=closes.slice(-10).reduce((a,b)=>a+b,0)/10;let sig='HOLD',conf=50;if(ma5>ma10){sig='RISE';conf=70+Math.random()*20;}else if(ma5<ma10){sig='FALL';conf=70+Math.random()*20;}else conf=45+Math.random()*15;$('aiSignal').textContent=sig;$('aiConf').textContent=conf.toFixed(0)+'%';$('aiReason').textContent=`${sig} ${currentMode.toUpperCase()} PLAY ${conf.toFixed(0)}% High Vol PLAY`;window._sig=sig;$('payout').textContent='$'+(parseFloat($('stake').value||10)*1.95).toFixed(2);}
+async function fetchRealBtc(){try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true');const d=await r.json();lastRealBtc=d.bitcoin.usd;const chg=d.bitcoin.usd_24h_change||0;$('btcChg').textContent=(chg>=0?'+':'')+chg.toFixed(2)+'% PLAY';}catch(e){}}
+setInterval(fetchRealBtc,10000); fetchRealBtc();
+setInterval(()=>{
+tickCounter++; $('tickCount').textContent=tickCounter%10;
+const vol = currentMode==='real' ? 4.5 : 9.5;
+btc = lastRealBtc + (Math.random()-0.5)*vol*25;
+if(Math.random() < 0.05){
+  btc += (Math.random() > 0.5 ? 1 : -1) * (200 + Math.random()*400);
+  $('marketStatus').textContent = '⚡ SPIKE PLAY REAL';
+  $('marketStatus').style.background = '#00a651';
+  setTimeout(()=>{ $('marketStatus').textContent='MARKET OPEN HIGH VOL PLAY'; }, 2000);
+}
+const now=Math.floor(Date.now()/1000);
+const last=candleData[candleData.length-1];
+if(now - last.time >= 60){
+  const nc={time:now,open:last.close,high:Math.max(last.close,btc)+Math.random()*250+80,low:Math.min(last.close,btc)-Math.random()*250-80,close:btc+(Math.random()-0.5)*180};
+  candleData.push(nc); ticks.push({time:now,value:btc,digit:Math.floor(Math.abs(btc*100))%10});
+  if(candleData.length>200){candleData.shift();ticks.shift();}
+  candleSeries.setData(candleData); lineSeries.setData(candleData.map(c=>({time:c.time,value:c.close})));
+}else{
+  last.close=btc; last.high=Math.max(last.high,btc+Math.random()*120); last.low=Math.min(last.low,btc-Math.random()*120);
+  candleSeries.update(last); lineSeries.update({time:last.time,value:btc});
+  if(tickCounter%3===0){ticks.push({time:now,value:btc,digit:Math.floor(Math.abs(btc*100))%10}); if(ticks.length>200)ticks.shift();}
+}
+$('btcP').textContent=fmt(btc); renderTicks(); runAI();
+},1000);
+function init(){initChart();check();
+// INSTANT DEMO PLAY - AUTO ENTER - POPUP BLOCK
+if(!user){
+  enterWeb('instant.demo.play@deriv.demo','Demo Player','');
+  setTimeout(()=>{toast('✅ INSTANT DEMO PLAY ALLOWED - Click Rise/Fall or Odd/Even under graph - $10,000 FAKE - High Vol -  REAL MONEY ALLOWED ');},500);
+}
+}
+init(); setInterval(runAI,2000);
+})();
+</script>
+</body>
+</html>
